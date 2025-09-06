@@ -1,4 +1,4 @@
-package edu.itba.class2.exchange.model;
+package edu.itba.class2.exchange.currency;
 
 import java.util.Objects;
 

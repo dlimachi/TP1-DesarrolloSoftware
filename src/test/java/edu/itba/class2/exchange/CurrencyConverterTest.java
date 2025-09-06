@@ -1,5 +1,6 @@
 package edu.itba.class2.exchange;
 
+import edu.itba.class2.exchange.currency.CurrencyConverter;
 import edu.itba.class2.exchange.exception.ConversionServerUnavailable;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
 import edu.itba.class2.exchange.interfaces.HttpClient;

@@ -1,4 +1,4 @@
-package edu.itba.class2.exchange;
+package edu.itba.class2.exchange.currency;
 
 import edu.itba.class2.exchange.interfaces.CurrencyProvider;
 
