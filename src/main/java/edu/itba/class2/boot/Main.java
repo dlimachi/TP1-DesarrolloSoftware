@@ -1,7 +1,10 @@
 package edu.itba.class2.boot;
 
 import edu.itba.class2.exchange.CurrencyConverter;
-import edu.itba.class2.exchange.httpclient.UnirestHttpClient;
+import edu.itba.class2.exchange.httpClient.HttpGetRequest;
+import edu.itba.class2.exchange.httpClient.UnirestHttpClient;
+
+import java.util.Map;
 
 public class Main {
 	public static void main(String[] args) {
