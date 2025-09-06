@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface CurrencyProvider {
-    public Currency getCurrencyFromCode(String code);
-    public Map<Currency, BigDecimal> getExchangeRates(String fromCurrency, List<String> toCurrencies);
+    Currency getCurrencyFromCode(String code);
+    Map<Currency, BigDecimal> getExchangeRates(String fromCurrency, List<String> toCurrencies);
 }
