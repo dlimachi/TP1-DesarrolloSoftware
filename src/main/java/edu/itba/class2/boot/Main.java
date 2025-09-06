@@ -1,12 +1,17 @@
 package edu.itba.class2.boot;
 
-import edu.itba.class2.exchange.CurrencyConverter;
-import edu.itba.class2.exchange.httpclient.UnirestHttpClient;
+import edu.itba.class2.exchange.currency.CurrencyConverter;
+import edu.itba.class2.exchange.httpClient.UnirestHttpClient;
+import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 public class Main {
 	public static void main(String[] args) {
 		final var httpClient = new UnirestHttpClient();
-		final var converter = new CurrencyConverter(httpClient);
-		System.out.println(converter.convert("EUR", "USD", 100));
+		final var provider = new FreeCurrencyApiProvider(httpClient);
+		final var converter = new CurrencyConverter(provider);
+		System.out.println(converter.convert("EUR", List.of("EUR", "USD", "JPY"), BigDecimal.valueOf(100.5)));
 	}
 }
