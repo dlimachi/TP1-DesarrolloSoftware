@@ -1,10 +1,10 @@
 package edu.itba.class2.exchange.provider;
 
 import com.google.gson.Gson;
+import edu.itba.class2.exchange.currency.Currency;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.interfaces.CurrencyProvider;
 import edu.itba.class2.exchange.interfaces.HttpClient;
-import edu.itba.class2.exchange.currency.Currency;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,19 +13,23 @@ import java.util.stream.Collectors;
 
 public class FreeCurrencyApiProvider implements CurrencyProvider {
     private final HttpClient httpClient;
-    private final String apiUrl = "https://api.freecurrencyapi.com/v1/latest";
+    private final String apiUrl = "https://api.freecurrencyapi.com/v1";
     private final String apiKey = "fca_live_tMQ4oYRmk8T587mrTdOFbTREYXjqCLRkXwJUS4C6";
 
-    FreeCurrencyApiProvider(HttpClient httpClient) {
+    public FreeCurrencyApiProvider(HttpClient httpClient) {
         this.httpClient = httpClient;
+    }
+
+    public HttpGetRequest.HttpGetRequestBuilder basicRequestBuilder(String endpoint) {
+        return new HttpGetRequest.HttpGetRequestBuilder()
+                .setUrl(apiUrl + "/" + endpoint)
+                .setHeader("Accept", "application/json")
+                .setHeader("apiKey", apiKey);
     }
 
     @Override
     public Currency getCurrencyFromCode(String code) {
-        final var request = new HttpGetRequest.HttpGetRequestBuilder()
-                .setUrl(apiUrl)
-                .setHeader("Accept", "application/json")
-                .setHeader("apiKey", apiKey)
+        final var request = basicRequestBuilder("currencies")
                 .setParameter("currencies", code)
                 .build();
         final var response = httpClient.get(request);
@@ -40,14 +44,9 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
     }
 
     @Override
-    public Map<Currency, BigDecimal> getExchangeRates(Currency fromCurrency, List<Currency> toCurrencies) {
-        final var currencyList = toCurrencies.stream()
-                .map(Currency::code)
-                .collect(Collectors.joining(","));
-        final var request = new HttpGetRequest.HttpGetRequestBuilder()
-                .setUrl(apiUrl)
-                .setHeader("Accept", "application/json")
-                .setHeader("apiKey", apiKey)
+    public Map<Currency, BigDecimal> getExchangeRates(String fromCurrency, List<String> toCurrencies) {
+        final var currencyList = String.join(",", toCurrencies);
+        final var request = basicRequestBuilder("latest")
                 .setParameter("base_currency", fromCurrency)
                 .setParameter("currencies", currencyList)
                 .build();
@@ -67,7 +66,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
                 ));
     }
 
-    public class FreeCurrencyCurrenciesApiResponse {
+    public static class FreeCurrencyCurrenciesApiResponse {
         private Map<String, Currency> data;
 
         public Map<String, Currency> getData() {
@@ -75,7 +74,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         }
     }
 
-    public class FreeCurrencyExchangeApiResponse {
+    public static class FreeCurrencyExchangeApiResponse {
         private Map<String, BigDecimal> data;
 
         public Map<String, BigDecimal> getData() {

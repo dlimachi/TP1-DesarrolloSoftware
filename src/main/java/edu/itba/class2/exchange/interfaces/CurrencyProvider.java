@@ -8,5 +8,5 @@ import java.util.Map;
 
 public interface CurrencyProvider {
     public Currency getCurrencyFromCode(String code);
-    public Map<Currency, BigDecimal> getExchangeRates(Currency fromCurrency, List<Currency> toCurrencies);
+    public Map<Currency, BigDecimal> getExchangeRates(String fromCurrency, List<String> toCurrencies);
 }
