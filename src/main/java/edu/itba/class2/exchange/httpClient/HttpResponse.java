@@ -1,4 +1,4 @@
-package edu.itba.class2.exchange;
+package edu.itba.class2.exchange.httpClient;
 
 public record HttpResponse(int status, String body) {
 
