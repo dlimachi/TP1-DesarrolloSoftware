@@ -1,10 +1,11 @@
-package edu.itba.class2.exchange.model;
+package edu.itba.class2.exchange.provider;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.interfaces.CurrencyProvider;
 import edu.itba.class2.exchange.interfaces.HttpClient;
+import edu.itba.class2.exchange.model.Currency;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -35,8 +36,8 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
             System.err.println("Error: " + response.status());
         }
 
-        final var exchangeRateResponse = new Gson().fromJson(response.body(), ApiResponse.class);
-        return exchangeRateResponse.getData();
+        final FreeCurrencyCurrenciesApiResponse currencyRetrived = new Gson().fromJson(response.body(), FreeCurrencyCurrenciesApiResponse.class);
+        return currencyRetrived.getData().get(code);
     }
 
     @Override
@@ -58,24 +59,28 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
             System.err.println("Error: " + response.status());
         }
 
-        Type type = new TypeToken<ApiResponse<BigDecimal>>() {}.getType();
-        final ApiResponse<BigDecimal> exchangeRateResponse = new Gson().fromJson(response.body(), type);
-//        var a = exchangeRateResponse.getData();
-//        var b = a.entrySet().stream().map((entry) -> {
-//            var currency = new Currency(entry.getKey());
-//            return ???;
-//        }).collect(Collectors.toList());
+        final FreeCurrencyExchangeApiResponse exchangeRateResponse = new Gson().fromJson(response.body(), FreeCurrencyExchangeApiResponse.class);
+        return exchangeRateResponse.getData().entrySet().stream()
+                .collect(Collectors.toMap(
+                        e -> getCurrencyFromCode(e.getKey()),
+                        Map.Entry::getValue
+                ));
     }
 
-    private static class ApiResponse<T> {
-        private Map<String, T> data;
+    public class FreeCurrencyCurrenciesApiResponse {
+        private Map<String, Currency> data;
 
-        public void setData(Map<String, T> data) {
-            this.data = data;
-        }
-
-        public Map<String, T> getData() {
+        public Map<String, Currency> getData() {
             return data;
         }
     }
+
+    public class FreeCurrencyExchangeApiResponse {
+        private Map<String, BigDecimal> data;
+
+        public Map<String, BigDecimal> getData() {
+            return data;
+        }
+    }
+
 }
