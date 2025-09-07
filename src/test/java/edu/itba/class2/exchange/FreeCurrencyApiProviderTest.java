@@ -1,29 +1,34 @@
 package edu.itba.class2.exchange;
 
+import edu.itba.class2.exchange.exception.InvalidCurrencyException;
+import edu.itba.class2.exchange.exception.ProviderException;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
 import edu.itba.class2.exchange.interfaces.HttpClient;
 import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class FreeCurrencyApiProviderTest {
     @Test
     void testGetCurrencyFromCode() {
         final var httpClient = mock(HttpClient.class);
-
         final var currencyUSD = """
                     {"data":{"USD":{"code":"USD","name":"US Dollar","symbol":"$"}}}
                 """;
-
         when(httpClient.get(any(HttpGetRequest.class)))
                 .thenReturn(new HttpResponse(200, currencyUSD));
 
@@ -64,5 +69,46 @@ class FreeCurrencyApiProviderTest {
         // TODO: check what this does.
         // verify interaction
 //        verify(httpClient, atLeastOnce()).get(any(HttpGetRequest.class));
+    }
+
+    @Test
+    void testInvalidCurrencyError() {
+        final var httpClient = mock(HttpClient.class);
+        final var errorJson = """
+                    {"errors":{"base_currency":["invalid currency"]}}
+                """;
+        when(httpClient.get(any(HttpGetRequest.class))).thenReturn(new HttpResponse(422, errorJson));
+
+        final var provider = new FreeCurrencyApiProvider(httpClient);
+        assertThrows(InvalidCurrencyException.class, () -> provider.getCurrencyFromCode("EUR"));
+    }
+
+    private static Stream<TestCase> errorCases() {
+        return Stream.of(
+                new TestCase(401, "Invalid authentication credentials"),
+                new TestCase(403, "Invalid endpoint"),
+                new TestCase(404, "Invalid endpoint"),
+                new TestCase(429, "Rate limit exceeded"),
+                new TestCase(500, "Provider server error")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("errorCases")
+    void testProviderErrors(TestCase testCase) {
+        final var httpClient = mock(HttpClient.class);
+        when(httpClient.get(any(HttpGetRequest.class)))
+                .thenReturn(new HttpResponse(testCase.status, ""));
+
+        final var provider = new FreeCurrencyApiProvider(httpClient);
+
+        ProviderException ex = assertThrows(
+                ProviderException.class,
+                () -> provider.getCurrencyFromCode("")
+        );
+        assertEquals(testCase.expectedMessage, ex.getMessage());
+    }
+
+    private record TestCase(int status, String expectedMessage) {
     }
 }

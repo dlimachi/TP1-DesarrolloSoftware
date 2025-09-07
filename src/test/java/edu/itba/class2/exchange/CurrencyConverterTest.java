@@ -2,10 +2,6 @@ package edu.itba.class2.exchange;
 
 import edu.itba.class2.exchange.currency.Currency;
 import edu.itba.class2.exchange.currency.CurrencyConverter;
-import edu.itba.class2.exchange.exception.ConversionServerUnavailable;
-import edu.itba.class2.exchange.httpClient.HttpGetRequest;
-import edu.itba.class2.exchange.httpClient.HttpResponse;
-import edu.itba.class2.exchange.interfaces.HttpClient;
 import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
 import org.junit.jupiter.api.Test;
 
@@ -14,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
