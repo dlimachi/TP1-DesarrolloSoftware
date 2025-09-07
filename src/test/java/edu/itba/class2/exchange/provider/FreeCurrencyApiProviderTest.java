@@ -62,5 +62,26 @@ class FreeCurrencyApiProviderTest {
         assertTrue(result.containsKey(eur));
         assertEquals(BigDecimal.valueOf(0.9), result.get(eur));
     }
+
+    @Test
+    void testGetCurrencyFromCode_Successful() {
+        // 1. Arrange
+        FreeCurrencyApiProvider.FreeCurrencyCurrenciesApiResponse currencyResponse =
+                new FreeCurrencyApiProvider.FreeCurrencyCurrenciesApiResponse(Map.of("USD", new Currency("USD", "US Dollar", "$")));
+
+        var httpResponse = new HttpResponse(200, new Gson().toJson(currencyResponse));
+
+        when(httpClient.get(any(HttpGetRequest.class))).thenReturn(httpResponse);
+
+        // 2. Act
+        Currency result = provider.getCurrencyFromCode("USD");
+
+        // 3. Assert
+        assertNotNull(result);
+        assertEquals("USD", result.code());
+        assertEquals("US Dollar", result.name());
+        assertEquals("$", result.symbol());
+    }
+
 }
 
