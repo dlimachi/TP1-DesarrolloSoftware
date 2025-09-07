@@ -1,6 +1,7 @@
 package edu.itba.class2.exchange.provider;
 
 import com.google.gson.Gson;
+import edu.itba.class2.exchange.config.ConfigurationManager;
 import edu.itba.class2.exchange.currency.Currency;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.interfaces.CurrencyProvider;
@@ -13,11 +14,13 @@ import java.util.stream.Collectors;
 
 public class FreeCurrencyApiProvider implements CurrencyProvider {
     private final HttpClient httpClient;
-    private final String apiUrl = "https://api.freecurrencyapi.com/v1";
-    private final String apiKey = "fca_live_tMQ4oYRmk8T587mrTdOFbTREYXjqCLRkXwJUS4C6";
+    private final String apiUrl;
+    private final String apiKey;
 
-    public FreeCurrencyApiProvider(HttpClient httpClient) {
+    public FreeCurrencyApiProvider(HttpClient httpClient, ConfigurationManager configurationManager) {
         this.httpClient = httpClient;
+        this.apiUrl = configurationManager.getProperty("api.url");
+        this.apiKey = configurationManager.getProperty("api.key");
     }
 
     public HttpGetRequest.HttpGetRequestBuilder basicRequestBuilder(String endpoint) {
