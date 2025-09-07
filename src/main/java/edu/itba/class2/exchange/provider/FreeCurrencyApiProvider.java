@@ -32,27 +32,36 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
                 .setHeader("apiKey", apiKey);
     }
 
+    private <T> T parseJson(HttpResponse response, Class<T> clazz) {
+        try {
+            return GSON.fromJson(response.body(), clazz);
+        } catch (RuntimeException e) {
+            throw new ProviderException("GSON parsing error: " + e.getMessage());
+        }
+    }
+
+    // TODO: better name
+    private void throwFrom422(HttpResponse response) {
+        final var errors = parseJson(response, ErrorResponse.class).getErrors();
+        if (errors.containsKey("base_currency") || errors.containsKey("currencies")) {
+            throw new InvalidCurrencyException();
+        } else if (errors.containsKey("date")) {
+            throw new InvalidDateException();
+        } else {
+            throw new ProviderException("422 Unprocessable entity: " + response.body());
+        }
+    }
+
     private void throwFromResponse(HttpResponse response) {
         switch (response.status()) {
-            case 200 -> { return; }
+            case 200 -> {
+                break;
+            }
             case 401 -> throw new ProviderException("Invalid authentication credentials");
             case 403, 404 -> throw new ProviderException("Invalid endpoint");
             case 429 -> throw new ProviderException("Rate limit exceeded");
             case 500 -> throw new ProviderException("Provider server error");
-            case 422 -> {
-                try {
-                    final var errors = GSON.fromJson(response.body(), ErrorResponse.class).getErrors();
-                    if (errors.containsKey("base_currency") || errors.containsKey("currencies")) {
-                        throw new InvalidCurrencyException();
-                    } else if (errors.containsKey("date")) {
-                        throw new InvalidDateException();
-                    } else {
-                        throw new ProviderException("422 Unprocessable entity: " + response.body());
-                    }
-                } catch (Exception e) {
-                    throw new ProviderException("Failed to parse 422 error response");
-                }
-            }
+            case 422 -> throwFrom422(response);
             default -> throw new ProviderException("Unexpected status code" + response.status());
         }
     }
@@ -66,7 +75,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
 
         throwFromResponse(response);
 
-        final var currencyRetrieved = GSON.fromJson(response.body(), CurrencyResponse.class);
+        final var currencyRetrieved = parseJson(response, CurrencyResponse.class);
         return currencyRetrieved.getData().get(code);
     }
 
@@ -81,8 +90,8 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
 
         throwFromResponse(response);
 
-        final var exchangeRateResponse = GSON.fromJson(response.body(), ExchangeResponse.class);
-        return exchangeRateResponse.getData().entrySet().stream()
+        final var exchangeRate = parseJson(response, ExchangeResponse.class).getData();
+        return exchangeRate.entrySet().stream()
                 .collect(Collectors.toMap(
                         e -> getCurrencyFromCode(e.getKey()),
                         Map.Entry::getValue
