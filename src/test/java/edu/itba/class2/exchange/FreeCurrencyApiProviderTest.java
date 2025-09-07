@@ -1,5 +1,6 @@
 package edu.itba.class2.exchange;
 
+import edu.itba.class2.exchange.config.ConfigurationManager;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
 import edu.itba.class2.exchange.interfaces.HttpClient;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.*;
 class FreeCurrencyApiProviderTest {
     @Test
     void testGetCurrencyFromCode() {
+        final var config = mock(ConfigurationManager.class);
         final var httpClient = mock(HttpClient.class);
 
         final var currencyUSD = """
@@ -27,7 +29,7 @@ class FreeCurrencyApiProviderTest {
         when(httpClient.get(any(HttpGetRequest.class)))
                 .thenReturn(new HttpResponse(200, currencyUSD));
 
-        final var provider = new FreeCurrencyApiProvider(httpClient);
+        final var provider = new FreeCurrencyApiProvider(httpClient, config);
         final var currency = provider.getCurrencyFromCode("USD");
         assertEquals(currency.code(), "USD");
         assertEquals(currency.name(), "US Dollar");
@@ -36,6 +38,7 @@ class FreeCurrencyApiProviderTest {
 
     @Test
     void testGetExchangeRates() {
+        ConfigurationManager config = mock(ConfigurationManager.class);
         HttpClient httpClient = mock(HttpClient.class);
 
         String exchangeRatesJson = """
@@ -53,7 +56,7 @@ class FreeCurrencyApiProviderTest {
                 .thenReturn(new HttpResponse(200, currencyUSD))   // for USD
                 .thenReturn(new HttpResponse(200, currencyEUR));  // for EUR
 
-        final var provider = new FreeCurrencyApiProvider(httpClient);
+        final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
         final var rates = provider.getExchangeRates("ARS", List.of("USD", "EUR"));
         assertEquals(2, rates.size());
