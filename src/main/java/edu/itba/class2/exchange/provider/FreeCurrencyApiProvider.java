@@ -43,7 +43,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         }
 
         final var currencyRetrieved = new Gson().fromJson(response.body(), FreeCurrencyCurrenciesApiResponse.class);
-        return currencyRetrieved.getData().get(code);
+        return currencyRetrieved.data().get(code);
     }
 
     @Override
@@ -62,27 +62,18 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         }
 
         final var exchangeRateResponse = new Gson().fromJson(response.body(), FreeCurrencyExchangeApiResponse.class);
-        return exchangeRateResponse.getData().entrySet().stream()
+        return exchangeRateResponse.data().entrySet().stream()
                 .collect(Collectors.toMap(
                         e -> getCurrencyFromCode(e.getKey()),
                         Map.Entry::getValue
                 ));
     }
 
-    public static class FreeCurrencyCurrenciesApiResponse {
-        private Map<String, Currency> data;
+    public record FreeCurrencyCurrenciesApiResponse(Map<String, Currency> data) {
 
-        public Map<String, Currency> getData() {
-            return data;
-        }
     }
 
-    public static class FreeCurrencyExchangeApiResponse {
-        private Map<String, BigDecimal> data;
-
-        public Map<String, BigDecimal> getData() {
-            return data;
-        }
+    public record FreeCurrencyExchangeApiResponse(Map<String, BigDecimal> data) {
     }
 
 }
