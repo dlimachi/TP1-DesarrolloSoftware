@@ -3,6 +3,7 @@ package edu.itba.class2.exchange.provider;
 import com.google.gson.Gson;
 import edu.itba.class2.exchange.config.ConfigurationManager;
 import edu.itba.class2.exchange.currency.Currency;
+import edu.itba.class2.exchange.currency.Exchange;
 import edu.itba.class2.exchange.exception.InvalidCurrencyException;
 import edu.itba.class2.exchange.exception.InvalidDateException;
 import edu.itba.class2.exchange.exception.ProviderException;
@@ -12,6 +13,7 @@ import edu.itba.class2.exchange.interfaces.CurrencyProvider;
 import edu.itba.class2.exchange.interfaces.HttpClient;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -98,11 +100,31 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
                 ));
     }
 
+    @Override
+    public Map<String, BigDecimal> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date){
+        final var currencyList = String.join(",", toCurrencies);
+        final var request = basicRequestBuilder("historical")
+                .setParameter("base_currency", fromCurrency)
+                .setParameter("currencies", currencyList)
+                .setParameter("date",date.toString())
+                .build();
+        final var response = httpClient.get(request);
+
+        handleErrorResponse(response);
+
+        final var historicalExchangeRate = parseJson(response,FreeCurrencyHistoricalExchangeApiResponse.class).data();
+
+        return historicalExchangeRate.get(date.toString());
+    }
+
     public record FreeCurrencyCurrenciesApiResponse(Map<String, Currency> data) {
 
     }
 
     public record FreeCurrencyExchangeApiResponse(Map<String, BigDecimal> data) {
+    }
+
+    public record FreeCurrencyHistoricalExchangeApiResponse(Map<String,Map<String,BigDecimal>> data){
     }
 
     public record ErrorResponse(Map<String, List<String>> errors) {
