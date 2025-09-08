@@ -7,24 +7,24 @@ import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
 import edu.itba.class2.exchange.interfaces.HttpClient;
 import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class FreeCurrencyApiProviderTest {
     @Test
+    @DisplayName("Should fetch currency details (code, name, symbol) when a valid code is provided")
     void testGetCurrencyFromCode() {
         final var config = mock(ConfigurationManager.class);
         final var httpClient = mock(HttpClient.class);
@@ -44,6 +44,7 @@ class FreeCurrencyApiProviderTest {
     }
 
     @Test
+    @DisplayName("Should fetch latest exchange rates and resolve corresponding currency metadata")
     void testGetExchangeRates() {
         ConfigurationManager config = mock(ConfigurationManager.class);
         HttpClient httpClient = mock(HttpClient.class);
@@ -70,13 +71,10 @@ class FreeCurrencyApiProviderTest {
         var ratesMap = rates.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().code(), Map.Entry::getValue));
         assertEquals(ratesMap.get("USD"), BigDecimal.valueOf(1.05));
         assertEquals(ratesMap.get("EUR"), BigDecimal.valueOf(0.95));
-
-        // TODO: check what this does.
-        // verify interaction
-        // verify(httpClient, atLeastOnce()).get(any(HttpGetRequest.class));
     }
 
     @Test
+    @DisplayName("Should throw InvalidCurrencyException when provider returns 422 with invalid currency error")
     void testInvalidCurrencyError() {
         ConfigurationManager config = mock(ConfigurationManager.class);
         final var httpClient = mock(HttpClient.class);
@@ -89,18 +87,9 @@ class FreeCurrencyApiProviderTest {
         assertThrows(InvalidCurrencyException.class, () -> provider.getCurrencyFromCode("EUR"));
     }
 
-    private static Stream<TestCase> errorCases() {
-        return Stream.of(
-                new TestCase(401, "Invalid authentication credentials"),
-                new TestCase(403, "Invalid endpoint"),
-                new TestCase(404, "Invalid endpoint"),
-                new TestCase(429, "Rate limit exceeded"),
-                new TestCase(500, "Provider server error")
-        );
-    }
-
     @ParameterizedTest
     @MethodSource("errorCases")
+    @DisplayName("Should map HTTP error responses to the corresponding ProviderException messages")
     void testProviderErrors(TestCase testCase) {
         ConfigurationManager config = mock(ConfigurationManager.class);
         final var httpClient = mock(HttpClient.class);
@@ -114,6 +103,16 @@ class FreeCurrencyApiProviderTest {
                 () -> provider.getCurrencyFromCode("")
         );
         assertEquals(testCase.expectedMessage, ex.getMessage());
+    }
+
+    private static Stream<TestCase> errorCases() {
+        return Stream.of(
+                new TestCase(401, "Invalid authentication credentials"),
+                new TestCase(403, "Invalid endpoint"),
+                new TestCase(404, "Invalid endpoint"),
+                new TestCase(429, "Rate limit exceeded"),
+                new TestCase(500, "Provider server error")
+        );
     }
 
     private record TestCase(int status, String expectedMessage) {

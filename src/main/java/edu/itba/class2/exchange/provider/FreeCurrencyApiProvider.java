@@ -43,8 +43,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         }
     }
 
-    // TODO: better name
-    private void throwFrom422(HttpResponse response) {
+    private void handleUnprocessableEntity(HttpResponse response) {
         final var errors = parseJson(response, ErrorResponse.class).errors();
         if (errors.containsKey("base_currency") || errors.containsKey("currencies")) {
             throw new InvalidCurrencyException();
@@ -55,14 +54,14 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         }
     }
 
-    private void throwFromResponse(HttpResponse response) {
+    private void handleErrorResponse(HttpResponse response) {
         switch (response.status()) {
             case 200 -> {}
             case 401 -> throw new ProviderException("Invalid authentication credentials");
             case 403, 404 -> throw new ProviderException("Invalid endpoint");
             case 429 -> throw new ProviderException("Rate limit exceeded");
             case 500 -> throw new ProviderException("Provider server error");
-            case 422 -> throwFrom422(response);
+            case 422 -> handleUnprocessableEntity(response);
             default -> throw new ProviderException("Unexpected status code" + response.status());
         }
     }
@@ -74,7 +73,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
                 .build();
         final var response = httpClient.get(request);
 
-        throwFromResponse(response);
+        handleErrorResponse(response);
 
         final var currencyRetrieved = parseJson(response, FreeCurrencyCurrenciesApiResponse.class);
         return currencyRetrieved.data().get(code);
@@ -89,7 +88,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
                 .build();
         final var response = httpClient.get(request);
 
-        throwFromResponse(response);
+        handleErrorResponse(response);
 
         final var exchangeRate = parseJson(response, FreeCurrencyExchangeApiResponse.class).data();
         return exchangeRate.entrySet().stream()
