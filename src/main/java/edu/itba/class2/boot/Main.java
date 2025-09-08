@@ -2,6 +2,9 @@ package edu.itba.class2.boot;
 
 import edu.itba.class2.exchange.config.DiskConfigurationManager;
 import edu.itba.class2.exchange.currency.CurrencyConverter;
+import edu.itba.class2.exchange.currency.CurrencyConverter;
+import edu.itba.class2.exchange.exception.InvalidCurrencyException;
+import edu.itba.class2.exchange.exception.ProviderException;
 import edu.itba.class2.exchange.httpClient.UnirestHttpClient;
 import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
 

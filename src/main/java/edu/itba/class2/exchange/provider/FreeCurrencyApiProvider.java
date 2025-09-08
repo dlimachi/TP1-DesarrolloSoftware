@@ -3,7 +3,11 @@ package edu.itba.class2.exchange.provider;
 import com.google.gson.Gson;
 import edu.itba.class2.exchange.config.ConfigurationManager;
 import edu.itba.class2.exchange.currency.Currency;
+import edu.itba.class2.exchange.exception.InvalidCurrencyException;
+import edu.itba.class2.exchange.exception.InvalidDateException;
+import edu.itba.class2.exchange.exception.ProviderException;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
+import edu.itba.class2.exchange.httpClient.HttpResponse;
 import edu.itba.class2.exchange.interfaces.CurrencyProvider;
 import edu.itba.class2.exchange.interfaces.HttpClient;
 
@@ -13,6 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FreeCurrencyApiProvider implements CurrencyProvider {
+    private static final Gson GSON = new Gson();
     private final HttpClient httpClient;
     private final String apiUrl;
     private final String apiKey;
@@ -23,11 +28,43 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         this.apiKey = configurationManager.getProperty("api.key");
     }
 
-    public HttpGetRequest.HttpGetRequestBuilder basicRequestBuilder(String endpoint) {
+    private HttpGetRequest.HttpGetRequestBuilder basicRequestBuilder(String endpoint) {
         return new HttpGetRequest.HttpGetRequestBuilder()
                 .setUrl(apiUrl + "/" + endpoint)
                 .setHeader("Accept", "application/json")
                 .setHeader("apiKey", apiKey);
+    }
+
+    private <T> T parseJson(HttpResponse response, Class<T> clazz) {
+        try {
+            return GSON.fromJson(response.body(), clazz);
+        } catch (RuntimeException e) {
+            throw new ProviderException("GSON parsing error: " + e.getMessage());
+        }
+    }
+
+    // TODO: better name
+    private void throwFrom422(HttpResponse response) {
+        final var errors = parseJson(response, ErrorResponse.class).errors();
+        if (errors.containsKey("base_currency") || errors.containsKey("currencies")) {
+            throw new InvalidCurrencyException();
+        } else if (errors.containsKey("date")) {
+            throw new InvalidDateException();
+        } else {
+            throw new ProviderException("422 Unprocessable entity: " + response.body());
+        }
+    }
+
+    private void throwFromResponse(HttpResponse response) {
+        switch (response.status()) {
+            case 200 -> {}
+            case 401 -> throw new ProviderException("Invalid authentication credentials");
+            case 403, 404 -> throw new ProviderException("Invalid endpoint");
+            case 429 -> throw new ProviderException("Rate limit exceeded");
+            case 500 -> throw new ProviderException("Provider server error");
+            case 422 -> throwFrom422(response);
+            default -> throw new ProviderException("Unexpected status code" + response.status());
+        }
     }
 
     @Override
@@ -37,12 +74,9 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
                 .build();
         final var response = httpClient.get(request);
 
-        if (response.status() != 200) {
-            System.err.println("Error: " + response.status());
-            throw new RuntimeException("Error: " + response.status());
-        }
+        throwFromResponse(response);
 
-        final var currencyRetrieved = new Gson().fromJson(response.body(), FreeCurrencyCurrenciesApiResponse.class);
+        final var currencyRetrieved = parseJson(response, FreeCurrencyCurrenciesApiResponse.class);
         return currencyRetrieved.data().get(code);
     }
 
@@ -55,14 +89,10 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
                 .build();
         final var response = httpClient.get(request);
 
-        // Check if the response is successful (status code 200).
-        if (response.status() != 200) {
-            System.err.println("Error: " + response.status());
-            throw new RuntimeException("Error: " + response.status());
-        }
+        throwFromResponse(response);
 
-        final var exchangeRateResponse = new Gson().fromJson(response.body(), FreeCurrencyExchangeApiResponse.class);
-        return exchangeRateResponse.data().entrySet().stream()
+        final var exchangeRate = parseJson(response, FreeCurrencyExchangeApiResponse.class).data();
+        return exchangeRate.entrySet().stream()
                 .collect(Collectors.toMap(
                         e -> getCurrencyFromCode(e.getKey()),
                         Map.Entry::getValue
@@ -76,4 +106,6 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
     public record FreeCurrencyExchangeApiResponse(Map<String, BigDecimal> data) {
     }
 
+    public record ErrorResponse(Map<String, List<String>> errors) {
+    }
 }
