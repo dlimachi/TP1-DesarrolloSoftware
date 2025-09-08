@@ -1,33 +1,36 @@
 package edu.itba.class2.exchange.config;
 
+import edu.itba.class2.exchange.exception.CouldNotLoadPropertiesException;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
 public class DiskConfigurationManager implements ConfigurationManager {
-    private static final String CONFIG_FILE = "application.properties";
+    private final String configFileName;
     private final Properties properties;
 
-    public DiskConfigurationManager() {
-        this.properties = loadProperties(CONFIG_FILE);
+    public DiskConfigurationManager(final String configFileName) {
+        this.configFileName = configFileName;
+        this.properties = loadProperties();
     }
 
-    private Properties loadProperties(String fileName) {
+    private Properties loadProperties() {
         Properties props = new Properties();
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream(fileName)) {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(configFileName)) {
             if (input == null) {
-                throw new RuntimeException("Unable to find " + fileName);
+                throw new FileNotFoundException("Unable to find " + configFileName);
             }
             props.load(input);
         } catch (IOException e) {
-            throw new RuntimeException("Error loading " + fileName, e);
+            throw new CouldNotLoadPropertiesException("Error loading " + configFileName, e);
         }
         return props;
     }
 
     @Override
-    public String getProperty(String key) {
+    public String getProperty(final String key) {
         return properties.getProperty(key);
     }
-
 }
