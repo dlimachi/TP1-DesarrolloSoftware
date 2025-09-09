@@ -32,15 +32,16 @@ public class CurrencyConverter {
 
     public Map<LocalDate,List<Exchange>> getHistorical(String fromCurrency, List<String> toCurrencies, BigDecimal amount, LocalDate date){
         try {
-            Map<String,Map<String,BigDecimal>> historicalExchangeRatesByDate = currencyProvider.getHistoricalExchangeRates(fromCurrency,toCurrencies,date);
-            return historicalExchangeRatesByDate.entrySet().stream()
+            Map<String,Map<Currency,BigDecimal>> historicalExchangeRates = currencyProvider.getHistoricalExchangeRates(fromCurrency,toCurrencies,date);
+
+            return historicalExchangeRates.entrySet().stream()
                     .collect(Collectors.toMap(
                             e -> LocalDate.parse(e.getKey()),
                             e -> e.getValue().entrySet().stream()
-                                    .map(exchange -> new Exchange(
-                                            currencyProvider.getCurrencyFromCode(exchange.getKey()),
-                                            exchange.getValue().multiply(amount),
-                                            exchange.getValue()
+                                    .map(entry -> new Exchange(
+                                            entry.getKey(),
+                                            entry.getValue().multiply(amount),
+                                            entry.getValue()
                                     ))
                                     .collect(Collectors.toList())
                     ));
