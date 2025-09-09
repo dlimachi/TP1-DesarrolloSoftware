@@ -17,7 +17,7 @@ public class Main {
         final var converter = new CurrencyConverter(provider);
 
         var fromCurrencies = List.of("USD", "EUR");
-        var toCurrencies = List.of("EUR", "USD", "JPY", "GBP");
+        var toCurrencies = List.of("USD", "JPY", "GBP");
         var amounts = List.of(
                 BigDecimal.valueOf(100.5),
                 BigDecimal.valueOf(50),
@@ -35,7 +35,7 @@ public class Main {
                                        List<BigDecimal> amounts) {
         System.out.println("=== Converting currencies ===");
         fromCurrencies.forEach(from -> {
-            sleep(1000);
+            sleep();
             System.out.println("\nFrom: " + from);
             amounts.forEach(amount -> {
                 System.out.println("  Amount: " + amount);
@@ -50,18 +50,18 @@ public class Main {
                                                  List<BigDecimal> amounts,
                                                  LocalDate date) {
         System.out.println("\n=== Historical conversions (" + date + ") ===");
-        String from = fromCurrencies.getFirst(); // solo el primero
+        String from = fromCurrencies.getFirst();
         System.out.println("\nFrom: " + from);
         amounts.forEach(amount -> {
-            sleep(1000);
+            sleep();
             System.out.println("  Amount: " + amount);
             System.out.println("  Result: " + converter.getHistorical(from, toCurrencies, amount, date));
         });
     }
 
-    private static void sleep(long millis) {
+    private static void sleep() {
         try {
-            Thread.sleep(millis);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
