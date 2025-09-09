@@ -9,6 +9,7 @@ import edu.itba.class2.exchange.interfaces.HttpClient;
 import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import edu.itba.class2.exchange.currency.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,25 +24,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class FreeCurrencyApiProviderTest {
-    @Test
-    @DisplayName("Should fetch currency details (code, name, symbol) when a valid code is provided")
-    void testGetCurrencyFromCode() {
-        final var config = mock(ConfigurationManager.class);
-        final var httpClient = mock(HttpClient.class);
-
-        final var currencyUSD = """
-                    {"data":{"USD":{"code":"USD","name":"US Dollar","symbol":"$"}}}
-                """;
-
-        when(httpClient.get(any(HttpGetRequest.class)))
-                .thenReturn(new HttpResponse(200, currencyUSD));
-
-        final var provider = new FreeCurrencyApiProvider(httpClient, config);
-        final var currency = provider.getCurrencyFromCode("USD");
-        assertEquals(currency.code(), "USD");
-        assertEquals(currency.name(), "US Dollar");
-        assertEquals(currency.symbol(), "$");
-    }
 
     @Test
     @DisplayName("Should fetch latest exchange rates and resolve corresponding currency metadata")
@@ -79,24 +61,35 @@ class FreeCurrencyApiProviderTest {
         ConfigurationManager config = mock(ConfigurationManager.class);
         HttpClient httpClient = mock(HttpClient.class);
 
+        var localDate = "2024-01-25";
+
         String historicalExchangeRates = """
                 {"data":{"2024-01-25":{"CAD":1.46,"USD":1.08}}}
                 """;
+        String currencyUSD = """
+                    {"data":{"USD":{"code":"USD","name":"US Dollar","symbol":"$"}}}
+                """;
+        String currencyCAD = """
+                    {"data":{"CAD":{"code":"CAD","name":"Canadian Dollar","symbol":"CA$"}}}
+                """;
 
         when(httpClient.get(any(HttpGetRequest.class)))
-                .thenReturn(new HttpResponse(200,historicalExchangeRates));
+                .thenReturn(new HttpResponse(200,historicalExchangeRates))
+                .thenReturn(new HttpResponse(200,currencyCAD))
+                .thenReturn(new HttpResponse(200,currencyUSD));
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
-        final var historicalExchangeRatesResponse = provider.getHistoricalExchangeRates("EUR",List.of("CAD","USD"), LocalDate.parse("2024-01-25"));
+        final var historicalExchangeRatesResponse = provider.getHistoricalExchangeRates("EUR",List.of("CAD","USD"), LocalDate.parse(localDate));
 
         assertEquals(1,historicalExchangeRatesResponse.size());
-        assertTrue(historicalExchangeRatesResponse.containsKey("2024-01-25"));
+        assertTrue(historicalExchangeRatesResponse.containsKey(localDate));
 
-        var ratesForDate = historicalExchangeRatesResponse.get("2024-01-25");
+        Map<Currency,BigDecimal> ratesForDate = historicalExchangeRatesResponse.get(localDate);
+        var ratesMap = ratesForDate.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().code(), Map.Entry::getValue));
         assertEquals(2,ratesForDate.size());
-        assertEquals(ratesForDate.get("CAD"),BigDecimal.valueOf(1.46));
-        assertEquals(ratesForDate.get("USD"),BigDecimal.valueOf(1.08));
+        assertEquals(ratesMap.get("CAD"),BigDecimal.valueOf(1.46));
+        assertEquals(ratesMap.get("USD"),BigDecimal.valueOf(1.08));
 
     }
 
@@ -111,7 +104,7 @@ class FreeCurrencyApiProviderTest {
         when(httpClient.get(any(HttpGetRequest.class))).thenReturn(new HttpResponse(422, errorJson));
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
-        assertThrows(InvalidCurrencyException.class, () -> provider.getCurrencyFromCode("EUR"));
+        assertThrows(InvalidCurrencyException.class, () -> provider.getExchangeRates("invalid", List.of("USD")));
     }
 
     @ParameterizedTest
@@ -127,7 +120,7 @@ class FreeCurrencyApiProviderTest {
 
         ProviderException ex = assertThrows(
                 ProviderException.class,
-                () -> provider.getCurrencyFromCode("")
+                () -> provider.getExchangeRates("",List.of())
         );
         assertEquals(testCase.expectedMessage, ex.getMessage());
     }
