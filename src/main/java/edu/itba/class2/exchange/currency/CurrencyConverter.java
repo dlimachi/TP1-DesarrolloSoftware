@@ -24,7 +24,7 @@ public class CurrencyConverter {
                             Map.Entry::getKey,
                             e -> e.getValue().multiply(amount)
                     ));
-        } catch (final Exception e) {
+        } catch (final RuntimeException e) {
             System.err.println("Error: " + e.getMessage());
             throw new RuntimeException(e);
         }
@@ -46,7 +46,7 @@ public class CurrencyConverter {
                                     .collect(Collectors.toList())
                     ));
 
-        } catch (final Exception e) {
+        } catch (final RuntimeException e) {
             System.err.println("Error: " + e.getMessage());
             throw new RuntimeException(e);
         }

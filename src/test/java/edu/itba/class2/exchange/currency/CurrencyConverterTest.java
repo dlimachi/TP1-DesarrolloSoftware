@@ -10,8 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -28,7 +29,7 @@ class CurrencyConverterTest {
 
     @Test
     @DisplayName("Should correctly convert amounts from USD to EUR and GBP using exchange rates")
-    void testConvert_Successful() {
+    void testConvertSuccessful() {
         Currency eur = new Currency("EUR", "Euro", "€");
         Currency gbp = new Currency("GBP", "British Pound", "£");
 
@@ -42,6 +43,31 @@ class CurrencyConverterTest {
         assertEquals(2, result.size());
         assertEquals(BigDecimal.valueOf(90.0), result.get(eur));  // 100 * 0.9
         assertEquals(BigDecimal.valueOf(80.0), result.get(gbp));  // 100 * 0.8
+    }
+
+    @Test
+    @DisplayName("Should throw RuntimeException when getExchangeRates throws RuntimeException")
+    void testConvertExceptionOnGetExchangeRates() {
+        when(currencyProvider.getExchangeRates(anyString(), anyList())).thenThrow(new RuntimeException());
+
+        assertThrows(
+                RuntimeException.class,
+                () -> converter.convert("USD", List.of("EUR", "GBP"), BigDecimal.valueOf(100))
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw RuntimeException when getHistoricalExchangeRates throws RuntimeException")
+    void testConvertExceptionOnGetHistoricalExchangeRates() {
+        when(currencyProvider.getHistoricalExchangeRates(
+                "USD", List.of("EUR", "GBP"), LocalDate.now())
+        ).thenThrow(new RuntimeException());
+
+        assertThrows(
+                RuntimeException.class,
+                () -> converter.getHistorical("USD", List.of("EUR", "GBP"), BigDecimal.valueOf(100),
+                        LocalDate.now())
+        );
     }
 
     @Test
