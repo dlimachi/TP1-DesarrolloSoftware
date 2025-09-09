@@ -7,7 +7,6 @@ import edu.itba.class2.exchange.exception.ProviderException;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
 import edu.itba.class2.exchange.interfaces.HttpClient;
-import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import edu.itba.class2.exchange.currency.Currency;
