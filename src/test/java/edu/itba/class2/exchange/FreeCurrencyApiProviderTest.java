@@ -2,6 +2,7 @@ package edu.itba.class2.exchange;
 
 import edu.itba.class2.exchange.config.ConfigurationManager;
 import edu.itba.class2.exchange.exception.InvalidCurrencyException;
+import edu.itba.class2.exchange.exception.InvalidDateException;
 import edu.itba.class2.exchange.exception.ProviderException;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
@@ -38,9 +39,9 @@ class FreeCurrencyApiProviderTest {
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
         final var currency = provider.getCurrencyFromCode("USD");
-        assertEquals(currency.code(), "USD");
-        assertEquals(currency.name(), "US Dollar");
-        assertEquals(currency.symbol(), "$");
+        assertEquals("USD", currency.code());
+        assertEquals("US Dollar", currency.name());
+        assertEquals("$", currency.symbol());
     }
 
     @Test
@@ -75,7 +76,7 @@ class FreeCurrencyApiProviderTest {
 
     @Test
     @DisplayName("Should fetch historical exchange rates and resolve corresponding currency metadata")
-    void testGetHistoricalExchangeRates(){
+    void testGetHistoricalExchangeRates() {
         ConfigurationManager config = mock(ConfigurationManager.class);
         HttpClient httpClient = mock(HttpClient.class);
 
@@ -101,12 +102,105 @@ class FreeCurrencyApiProviderTest {
     }
 
     @Test
-    @DisplayName("Should throw InvalidCurrencyException when provider returns 422 with invalid currency error")
-    void testInvalidCurrencyError() {
+    @DisplayName("Should throw ProviderException due to GSON parse error")
+    void testGetHistoricalExchangeRatesWithInvalidJson() {
+        ConfigurationManager config = mock(ConfigurationManager.class);
+        HttpClient httpClient = mock(HttpClient.class);
+
+        /* Missing closing curly brace at the end */
+        String historicalExchangeRates = """
+                {"data":{"2024-01-25":{"CAD":1.46,"USD":1.08}}
+                """;
+
+        when(httpClient.get(any(HttpGetRequest.class)))
+                .thenReturn(new HttpResponse(200,historicalExchangeRates));
+
+        final var provider = new FreeCurrencyApiProvider(httpClient, config);
+
+        assertThrows(
+                ProviderException.class,
+                () -> provider.getHistoricalExchangeRates(
+                        "EUR",List.of("CAD","USD"),
+                        LocalDate.parse("2024-01-25")
+                )
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidDateException due to missing date")
+    void testGetHistoricalExchangeRatesWithMissingDate() {
+        ConfigurationManager config = mock(ConfigurationManager.class);
+        HttpClient httpClient = mock(HttpClient.class);
+
+        /* Missing closing curly brace at the end */
+        String historicalExchangeRates = """
+            {
+                "message": "Validation error",
+                "errors": {
+                    "date": [
+                        "The date is not a valid date.",
+                        "The date must be a date after or equal to 1999-01-01."
+                    ]
+                },
+                "info": "For more information, see documentation: https://freecurrencyapi.com/docs/status-codes#_422"
+            }
+            """;
+
+        when(httpClient.get(any(HttpGetRequest.class)))
+                .thenReturn(new HttpResponse(422,historicalExchangeRates));
+
+        final var provider = new FreeCurrencyApiProvider(httpClient, config);
+
+        assertThrows(
+                InvalidDateException.class,
+                () -> provider.getHistoricalExchangeRates(
+                        "EUR",List.of("CAD","USD"),
+                        LocalDate.parse("2024-01-25")
+                )
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw ProviderException when 'errors' does not contain 'base_currency', 'currencies' or 'date'")
+    void testUnprocessableEntityDefaultCase() {
+        ConfigurationManager config = mock(ConfigurationManager.class);
+        final var httpClient = mock(HttpClient.class);
+        final var errorJson = """
+                    {"errors":{"this_is_an_invalid_error_key":null}}
+                """;
+        when(httpClient.get(any(HttpGetRequest.class))).thenReturn(new HttpResponse(422, errorJson));
+
+        final var provider = new FreeCurrencyApiProvider(httpClient, config);
+        assertThrows(
+                ProviderException.class,
+                () -> provider.getHistoricalExchangeRates(
+                        "EUR",List.of("CAD","USD"),
+                        LocalDate.parse("2024-01-25")
+                )
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidCurrencyException when provider returns 422 with invalid base_currency error")
+    void testInvalidBaseCurrencyError() {
         ConfigurationManager config = mock(ConfigurationManager.class);
         final var httpClient = mock(HttpClient.class);
         final var errorJson = """
                     {"errors":{"base_currency":["invalid currency"]}}
+                """;
+        when(httpClient.get(any(HttpGetRequest.class))).thenReturn(new HttpResponse(422, errorJson));
+
+        final var provider = new FreeCurrencyApiProvider(httpClient, config);
+        assertThrows(InvalidCurrencyException.class, () -> provider.getCurrencyFromCode("EUR"));
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidCurrencyException when provider returns 422 with invalid currencies")
+    void testInvalidCurrenciesError() {
+        ConfigurationManager config = mock(ConfigurationManager.class);
+        final var httpClient = mock(HttpClient.class);
+        final var errorJson = """
+                    {"errors":{"currencies":["invalid currency"]}}
                 """;
         when(httpClient.get(any(HttpGetRequest.class))).thenReturn(new HttpResponse(422, errorJson));
 
@@ -138,7 +232,8 @@ class FreeCurrencyApiProviderTest {
                 new TestCase(403, "Invalid endpoint"),
                 new TestCase(404, "Invalid endpoint"),
                 new TestCase(429, "Rate limit exceeded"),
-                new TestCase(500, "Provider server error")
+                new TestCase(500, "Provider server error"),
+                new TestCase(123, "Unexpected status code" + 123)
         );
     }
 
