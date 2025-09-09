@@ -101,7 +101,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
     }
 
     @Override
-    public Map<String, BigDecimal> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date){
+    public Map<String, Map<String,BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date){
         final var currencyList = String.join(",", toCurrencies);
         final var request = basicRequestBuilder("historical")
                 .setParameter("base_currency", fromCurrency)
@@ -112,9 +112,8 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
 
         handleErrorResponse(response);
 
-        final var historicalExchangeRate = parseJson(response,FreeCurrencyHistoricalExchangeApiResponse.class).data();
+        return parseJson(response,FreeCurrencyHistoricalExchangeApiResponse.class).data();
 
-        return historicalExchangeRate.get(date.toString());
     }
 
     public record FreeCurrencyCurrenciesApiResponse(Map<String, Currency> data) {

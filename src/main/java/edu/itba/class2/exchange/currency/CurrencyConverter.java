@@ -30,13 +30,19 @@ public class CurrencyConverter {
         }
     }
 
-    public Map<Currency,Exchange> getHistorical(String fromCurrency, List<String> toCurrencies, BigDecimal amount, LocalDate date){
+    public Map<LocalDate,List<Exchange>> getHistorical(String fromCurrency, List<String> toCurrencies, BigDecimal amount, LocalDate date){
         try {
-            Map<String,BigDecimal> historicalExchangeRates = currencyProvider.getHistoricalExchangeRates(fromCurrency,toCurrencies,date);
-            return historicalExchangeRates.entrySet().stream()
+            Map<String,Map<String,BigDecimal>> historicalExchangeRatesByDate = currencyProvider.getHistoricalExchangeRates(fromCurrency,toCurrencies,date);
+            return historicalExchangeRatesByDate.entrySet().stream()
                     .collect(Collectors.toMap(
-                            e -> currencyProvider.getCurrencyFromCode(e.getKey()),
-                            e -> new Exchange(e.getValue().multiply(amount),e.getValue())
+                            e -> LocalDate.parse(e.getKey()),
+                            e -> e.getValue().entrySet().stream()
+                                    .map(exchange -> new Exchange(
+                                            currencyProvider.getCurrencyFromCode(exchange.getKey()),
+                                            exchange.getValue().multiply(amount),
+                                            exchange.getValue()
+                                    ))
+                                    .collect(Collectors.toList())
                     ));
 
         } catch (final Exception e) {

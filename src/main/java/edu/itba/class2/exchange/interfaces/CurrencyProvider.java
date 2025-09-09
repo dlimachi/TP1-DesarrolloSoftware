@@ -11,5 +11,5 @@ import java.util.Map;
 public interface CurrencyProvider {
     Currency getCurrencyFromCode(String code);
     Map<Currency, BigDecimal> getExchangeRates(String fromCurrency, List<String> toCurrencies);
-    Map<String, BigDecimal> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date);
+    Map<String, Map<String,BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date);
     }
