@@ -53,10 +53,8 @@ class CurrencyConverterTest {
         var date = LocalDate.parse("2023-02-14");
 
         when(currencyProvider.getHistoricalExchangeRates("USD",List.of("EUR", "GBP"),date ))
-                .thenReturn(Map.of("2023-02-14",Map.of("EUR",BigDecimal.valueOf(0.93),"GBP",BigDecimal.valueOf(0.82))));
-
-        when(currencyProvider.getCurrencyFromCode("EUR")).thenReturn(eur);
-        when(currencyProvider.getCurrencyFromCode("GBP")).thenReturn(gbp);
+                .thenReturn(Map.of("2023-02-14",Map.of(eur,BigDecimal.valueOf(0.93),gbp,BigDecimal.valueOf(0.82))));
+        
 
         Map<LocalDate,List<Exchange>> result = converter.getHistorical("USD",List.of("EUR","GBP"),BigDecimal.valueOf(100),date);
 
