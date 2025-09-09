@@ -5,6 +5,7 @@ import edu.itba.class2.exchange.exception.CouldNotLoadPropertiesException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Properties;
 
 public class DiskConfigurationManager implements ConfigurationManager {
@@ -18,15 +19,18 @@ public class DiskConfigurationManager implements ConfigurationManager {
 
     private Properties loadProperties() {
         Properties props = new Properties();
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream(configFileName)) {
-            if (input == null) {
-                throw new FileNotFoundException("Unable to find " + configFileName);
-            }
+        try (InputStream input = openResource(configFileName)) {
             props.load(input);
         } catch (IOException e) {
             throw new CouldNotLoadPropertiesException("Error loading " + configFileName, e);
         }
         return props;
+    }
+
+    private InputStream openResource(String name) throws IOException {
+        return Optional.ofNullable(
+                getClass().getClassLoader().getResourceAsStream(name)
+        ).orElseThrow(() -> new FileNotFoundException("Unable to find " + name));
     }
 
     @Override
