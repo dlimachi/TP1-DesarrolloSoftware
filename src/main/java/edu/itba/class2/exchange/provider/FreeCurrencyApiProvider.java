@@ -68,17 +68,17 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         }
     }
 
-
-    private Currency getCurrencyFromCode(String code) {
+    private Map<String, Currency> getCurrenciesFromCodes(List<String> codes) {
+        final var codeList = String.join(",", codes);
         final var request = basicRequestBuilder("currencies")
-                .setParameter("currencies", code)
+                .setParameter("currencies", codeList)
                 .build();
         final var response = httpClient.get(request);
 
         handleErrorResponse(response);
 
         final var currencyRetrieved = parseJson(response, FreeCurrencyCurrenciesApiResponse.class);
-        return currencyRetrieved.data().get(code);
+        return currencyRetrieved.data();
     }
 
     @Override
@@ -93,9 +93,10 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         handleErrorResponse(response);
 
         final var exchangeRate = parseJson(response, FreeCurrencyExchangeApiResponse.class).data();
+        final var currencies = getCurrenciesFromCodes(toCurrencies);
         return exchangeRate.entrySet().stream()
                 .collect(Collectors.toMap(
-                        e -> getCurrencyFromCode(e.getKey()),
+                        e -> currencies.get(e.getKey()),
                         Map.Entry::getValue
                 ));
     }
@@ -113,12 +114,13 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         handleErrorResponse(response);
 
         final var historicalExchangeRates = parseJson(response, FreeCurrencyHistoricalExchangeApiResponse.class).data();
+        final var currencies = getCurrenciesFromCodes(toCurrencies);
         return historicalExchangeRates.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> e.getValue().entrySet().stream()
                                 .collect(Collectors.toMap(
-                                        entry -> getCurrencyFromCode(entry.getKey()),
+                                        entry -> currencies.get(entry.getKey()),
                                         Map.Entry::getValue
                                 ))
                 ));

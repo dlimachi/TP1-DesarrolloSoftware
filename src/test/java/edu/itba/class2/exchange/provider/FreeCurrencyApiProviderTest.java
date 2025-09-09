@@ -36,17 +36,18 @@ class FreeCurrencyApiProviderTest {
         String exchangeRatesJson = """
                     {"data":{"USD":1.05,"EUR":0.95}}
                 """;
-        String currencyUSD = """
-                    {"data":{"USD":{"code":"USD","name":"US Dollar","symbol":"$"}}}
-                """;
-        String currencyEUR = """
-                    {"data":{"EUR":{"code":"EUR","name":"EURO","symbol":"€"}}}
+        String currenciesJson = """
+                    {
+                        "data": {
+                            "USD":{"code":"USD","name":"US Dollar","symbol":"$"},
+                            "EUR":{"code":"EUR","name":"EURO","symbol":"€"}
+                        }
+                    }
                 """;
 
         when(httpClient.get(any(HttpGetRequest.class)))
                 .thenReturn(new HttpResponse(200, exchangeRatesJson)) // for latest
-                .thenReturn(new HttpResponse(200, currencyUSD))   // for USD
-                .thenReturn(new HttpResponse(200, currencyEUR));  // for EUR
+                .thenReturn(new HttpResponse(200, currenciesJson)); // for currencies
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
@@ -68,17 +69,18 @@ class FreeCurrencyApiProviderTest {
         String historicalExchangeRates = """
                 {"data":{"2024-01-25":{"CAD":1.46,"USD":1.08}}}
                 """;
-        String currencyUSD = """
-                    {"data":{"USD":{"code":"USD","name":"US Dollar","symbol":"$"}}}
-                """;
-        String currencyCAD = """
-                    {"data":{"CAD":{"code":"CAD","name":"Canadian Dollar","symbol":"CA$"}}}
+        String currenciesJson = """
+                    {
+                        "data": {
+                            "USD":{"code":"USD","name":"US Dollar","symbol":"$"},
+                            "CAD":{"code":"CAD","name":"Canadian Dollar","symbol":"CA$"}
+                        }
+                    }
                 """;
 
         when(httpClient.get(any(HttpGetRequest.class)))
                 .thenReturn(new HttpResponse(200, historicalExchangeRates))
-                .thenReturn(new HttpResponse(200, currencyCAD))
-                .thenReturn(new HttpResponse(200, currencyUSD));
+                .thenReturn(new HttpResponse(200, currenciesJson));
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
