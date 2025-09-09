@@ -3,6 +3,7 @@ package edu.itba.class2.exchange.provider;
 import com.google.gson.Gson;
 import edu.itba.class2.exchange.config.ConfigurationManager;
 import edu.itba.class2.exchange.currency.Currency;
+
 import edu.itba.class2.exchange.exception.InvalidCurrencyException;
 import edu.itba.class2.exchange.exception.InvalidDateException;
 import edu.itba.class2.exchange.exception.ProviderException;
@@ -67,8 +68,8 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
         }
     }
 
-    @Override
-    public Currency getCurrencyFromCode(String code) {
+
+    private Currency getCurrencyFromCode(String code) {
         final var request = basicRequestBuilder("currencies")
                 .setParameter("currencies", code)
                 .build();
@@ -100,7 +101,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
     }
 
     @Override
-    public Map<String, Map<String,BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date){
+    public Map<String, Map<Currency,BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date){
         final var currencyList = String.join(",", toCurrencies);
         final var request = basicRequestBuilder("historical")
                 .setParameter("base_currency", fromCurrency)
@@ -111,7 +112,16 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
 
         handleErrorResponse(response);
 
-        return parseJson(response,FreeCurrencyHistoricalExchangeApiResponse.class).data();
+        final var historicalExchangeRates =  parseJson(response,FreeCurrencyHistoricalExchangeApiResponse.class).data();
+        return historicalExchangeRates.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        entry -> getCurrencyFromCode(entry.getKey()),
+                                        Map.Entry::getValue
+                                ))
+                ));
 
     }
 
