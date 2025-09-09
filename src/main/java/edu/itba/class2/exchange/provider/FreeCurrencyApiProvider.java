@@ -2,6 +2,7 @@ package edu.itba.class2.exchange.provider;
 
 import com.google.gson.Gson;
 import edu.itba.class2.exchange.currency.Currency;
+import edu.itba.class2.exchange.currency.ExchangeRate;
 import edu.itba.class2.exchange.exception.InvalidCurrencyException;
 import edu.itba.class2.exchange.exception.InvalidDateException;
 import edu.itba.class2.exchange.exception.ProviderException;
@@ -15,7 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FreeCurrencyApiProvider implements CurrencyProvider {
     private static final Gson GSON = new Gson();
@@ -82,7 +83,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
     }
 
     @Override
-    public Map<Currency, BigDecimal> getExchangeRates(String fromCurrency, List<String> toCurrencies) {
+    public List<ExchangeRate> getExchangeRates(String fromCurrency, List<String> toCurrencies) {
         final var currencyList = String.join(",", toCurrencies);
         final var request = basicRequestBuilder("latest")
                 .setParameter("base_currency", fromCurrency)
@@ -92,17 +93,19 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
 
         handleErrorResponse(response);
 
-        final var exchangeRate = parseJson(response, FreeCurrencyExchangeApiResponse.class).data();
-        final var currencies = getCurrenciesFromCodes(toCurrencies);
-        return exchangeRate.entrySet().stream()
-                .collect(Collectors.toMap(
-                        e -> currencies.get(e.getKey()),
-                        Map.Entry::getValue
-                ));
+        final var exchangeRateApiResponse = parseJson(response, FreeCurrencyExchangeApiResponse.class).data();
+        final var currencies = getCurrenciesFromCodes(
+                Stream.concat(Stream.of(fromCurrency), toCurrencies.stream()).toList()
+        );
+
+        return exchangeRateApiResponse.entrySet().stream().map(entrySet -> new ExchangeRate(
+                        currencies.get(fromCurrency), currencies.get(entrySet.getKey()), entrySet.getValue(), LocalDate.now()
+                )
+        ).toList();
     }
 
     @Override
-    public Map<String, Map<Currency, BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date) {
+    public List<ExchangeRate> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date) {
         final var currencyList = String.join(",", toCurrencies);
         final var request = basicRequestBuilder("historical")
                 .setParameter("base_currency", fromCurrency)
@@ -113,18 +116,17 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
 
         handleErrorResponse(response);
 
-        final var historicalExchangeRates = parseJson(response, FreeCurrencyHistoricalExchangeApiResponse.class).data();
-        final var currencies = getCurrenciesFromCodes(toCurrencies);
-        return historicalExchangeRates.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue().entrySet().stream()
-                                .collect(Collectors.toMap(
-                                        entry -> currencies.get(entry.getKey()),
-                                        Map.Entry::getValue
-                                ))
-                ));
+        final var historicalExchangeRatesApiResponse = parseJson(response, FreeCurrencyHistoricalExchangeApiResponse.class).data();
+        final var historicalExchangeRatesForDate = historicalExchangeRatesApiResponse.get(date.toString());
+        final var currencies = getCurrenciesFromCodes(
+                Stream.concat(Stream.of(fromCurrency), toCurrencies.stream()).toList()
+        );
 
+        return historicalExchangeRatesForDate.entrySet().stream().map(entrySet ->
+                new ExchangeRate(
+                        currencies.get(fromCurrency), currencies.get(entrySet.getKey()), entrySet.getValue(), date
+                )
+        ).toList();
     }
 
     public record FreeCurrencyCurrenciesApiResponse(Map<String, Currency> data) {

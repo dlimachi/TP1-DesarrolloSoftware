@@ -53,9 +53,8 @@ class FreeCurrencyApiProviderTest {
 
         final var rates = provider.getExchangeRates("ARS", List.of("USD", "EUR"));
         assertEquals(2, rates.size());
-        var ratesMap = rates.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().code(), Map.Entry::getValue));
-        assertEquals(ratesMap.get("USD"), BigDecimal.valueOf(1.05));
-        assertEquals(ratesMap.get("EUR"), BigDecimal.valueOf(0.95));
+        assertEquals(rates.get(0).rate(), BigDecimal.valueOf(1.05));
+        assertEquals(rates.get(1).rate(), BigDecimal.valueOf(0.95));
     }
 
     @Test
@@ -84,16 +83,11 @@ class FreeCurrencyApiProviderTest {
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
-        final var historicalExchangeRatesResponse = provider.getHistoricalExchangeRates("EUR", List.of("CAD", "USD"), LocalDate.parse(localDate));
+        final var historicalRates = provider.getHistoricalExchangeRates("EUR", List.of("CAD", "USD"), LocalDate.parse(localDate));
 
-        assertEquals(1, historicalExchangeRatesResponse.size());
-        assertTrue(historicalExchangeRatesResponse.containsKey(localDate));
-
-        Map<Currency, BigDecimal> ratesForDate = historicalExchangeRatesResponse.get(localDate);
-        var ratesMap = ratesForDate.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().code(), Map.Entry::getValue));
-        assertEquals(2, ratesForDate.size());
-        assertEquals(ratesMap.get("CAD"), BigDecimal.valueOf(1.46));
-        assertEquals(ratesMap.get("USD"), BigDecimal.valueOf(1.08));
+        assertEquals(2, historicalRates.size());
+        assertEquals(historicalRates.get(0).rate(), BigDecimal.valueOf(1.46));
+        assertEquals(historicalRates.get(1).rate(), BigDecimal.valueOf(1.08));
 
     }
 

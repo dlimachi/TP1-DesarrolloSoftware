@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -31,19 +31,20 @@ class CurrencyConverterTest {
     @Test
     @DisplayName("Should correctly convert amounts from USD to EUR and GBP using exchange rates")
     void testConvertSuccessful() {
+        Currency usd = new Currency("USD", "United States Dollar", "$");
         Currency eur = new Currency("EUR", "Euro", "€");
         Currency gbp = new Currency("GBP", "British Pound", "£");
 
-        when(currencyProvider.getExchangeRates("USD", List.of("EUR", "GBP"))).thenReturn(Map.of(
-                eur, BigDecimal.valueOf(0.9),
-                gbp, BigDecimal.valueOf(0.8)
+        when(currencyProvider.getExchangeRates("USD", List.of("EUR", "GBP"))).thenReturn(List.of(
+                new ExchangeRate(usd, eur, BigDecimal.valueOf(0.9), LocalDate.now()),
+                new ExchangeRate(usd, gbp, BigDecimal.valueOf(0.8), LocalDate.now())
         ));
 
-        Map<Currency, BigDecimal> result = converter.convert("USD", List.of("EUR", "GBP"), BigDecimal.valueOf(100));
+        var result = converter.convert("USD", List.of("EUR", "GBP"), BigDecimal.valueOf(100));
 
         assertEquals(2, result.size());
-        assertEquals(BigDecimal.valueOf(90.0), result.get(eur));  // 100 * 0.9
-        assertEquals(BigDecimal.valueOf(80.0), result.get(gbp));  // 100 * 0.8
+        assertEquals(BigDecimal.valueOf(90.0), result.get(0).amount());  // 100 * 0.9
+        assertEquals(BigDecimal.valueOf(80.0), result.get(1).amount());  // 100 * 0.8
     }
 
     @Test
@@ -74,27 +75,26 @@ class CurrencyConverterTest {
     @Test
     @DisplayName("Should correctly convert amounts from USD to EUR and GBP using exchange rates on a specific date ")
     void testHistoricalExchange() {
+        var usd = new Currency("USD", "United States Dollar", "$");
         var eur = new Currency("EUR", "Euro", "€");
         var gbp = new Currency("GBP", "British Pound", "£");
 
         var date = LocalDate.parse("2023-02-14");
 
         when(currencyProvider.getHistoricalExchangeRates("USD", List.of("EUR", "GBP"), date))
-                .thenReturn(Map.of("2023-02-14", Map.of(eur, BigDecimal.valueOf(0.93), gbp, BigDecimal.valueOf(0.82))));
+                .thenReturn(List.of(
+                        new ExchangeRate(usd, eur, BigDecimal.valueOf(0.93), date),
+                        new ExchangeRate(usd, gbp, BigDecimal.valueOf(0.82), date)
+                ));
 
 
-        Map<LocalDate, List<Exchange>> result = converter.getHistorical("USD", List.of("EUR", "GBP"), BigDecimal.valueOf(100), date);
+        var result = converter.getHistorical("USD", List.of("EUR", "GBP"), BigDecimal.valueOf(100), date);
 
-        assertEquals(1, result.size());
-        assertTrue(result.containsKey(date));
+        assertEquals(2, result.size());
 
-        var eurExchange = new Exchange(eur, BigDecimal.valueOf(93.00).setScale(2, RoundingMode.HALF_UP), BigDecimal.valueOf(0.93));
-        var gbpExchange = new Exchange(gbp, BigDecimal.valueOf(82.00).setScale(2, RoundingMode.HALF_UP), BigDecimal.valueOf(0.82));
-
-        var exchangesByDate = result.get(date);
-        assertEquals(2, exchangesByDate.size());
-        assertTrue(exchangesByDate.contains(eurExchange));
-        assertTrue(exchangesByDate.contains(gbpExchange));
-
+        assertEquals(BigDecimal.valueOf(93.0).setScale(2, RoundingMode.HALF_UP), result.get(0).amount());
+        assertEquals(date, result.get(0).exchangeRate().date());
+        assertEquals(BigDecimal.valueOf(82.0).setScale(2, RoundingMode.HALF_UP), result.get(1).amount());
+        assertEquals(date, result.get(1).exchangeRate().date());
     }
 }
