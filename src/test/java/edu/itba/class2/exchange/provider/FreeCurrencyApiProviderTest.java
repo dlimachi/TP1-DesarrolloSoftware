@@ -126,7 +126,6 @@ class FreeCurrencyApiProviderTest {
         ConfigurationManager config = mock(ConfigurationManager.class);
         HttpClient httpClient = mock(HttpClient.class);
 
-        /* Missing closing curly brace at the end */
         String historicalExchangeRates = """
                 {
                     "message": "Validation error",
