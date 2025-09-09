@@ -3,7 +3,6 @@ package edu.itba.class2.exchange.provider;
 import com.google.gson.Gson;
 import edu.itba.class2.exchange.config.ConfigurationManager;
 import edu.itba.class2.exchange.currency.Currency;
-import edu.itba.class2.exchange.currency.Exchange;
 import edu.itba.class2.exchange.exception.InvalidCurrencyException;
 import edu.itba.class2.exchange.exception.InvalidDateException;
 import edu.itba.class2.exchange.exception.ProviderException;
