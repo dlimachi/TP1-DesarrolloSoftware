@@ -121,7 +121,7 @@ class FreeCurrencyApiProviderTest {
     }
 
     @Test
-    @DisplayName("Should throw InvalidDateException due to missing date")
+    @DisplayName("Should throw InvalidDateException due to invalid date")
     void testGetHistoricalExchangeRatesWithMissingDate() {
         ConfigurationManager config = mock(ConfigurationManager.class);
         HttpClient httpClient = mock(HttpClient.class);
@@ -131,7 +131,6 @@ class FreeCurrencyApiProviderTest {
                     "message": "Validation error",
                     "errors": {
                         "date": [
-                            "The date is not a valid date.",
                             "The date must be a date after or equal to 1999-01-01."
                         ]
                     },
@@ -148,7 +147,7 @@ class FreeCurrencyApiProviderTest {
                 InvalidDateException.class,
                 () -> provider.getHistoricalExchangeRates(
                         "EUR", List.of("CAD", "USD"),
-                        LocalDate.parse("2024-01-25")
+                        LocalDate.parse("1998-01-25")
                 )
         );
     }
