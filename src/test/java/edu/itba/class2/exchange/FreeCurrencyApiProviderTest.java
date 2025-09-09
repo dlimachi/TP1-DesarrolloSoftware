@@ -8,6 +8,7 @@ import edu.itba.class2.exchange.httpClient.HttpResponse;
 import edu.itba.class2.exchange.interfaces.HttpClient;
 import edu.itba.class2.exchange.provider.FreeCurrencyApiProvider;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -17,8 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -71,6 +71,33 @@ class FreeCurrencyApiProviderTest {
         var ratesMap = rates.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().code(), Map.Entry::getValue));
         assertEquals(ratesMap.get("USD"), BigDecimal.valueOf(1.05));
         assertEquals(ratesMap.get("EUR"), BigDecimal.valueOf(0.95));
+    }
+
+    @Test
+    @DisplayName("Should fetch historical exchange rates and resolve corresponding currency metadata")
+    void testGetHistoricalExchangeRates(){
+        ConfigurationManager config = mock(ConfigurationManager.class);
+        HttpClient httpClient = mock(HttpClient.class);
+
+        String historicalExchangeRates = """
+                {"data":{"2024-01-25":{"CAD":1.46,"USD":1.08}}}
+                """;
+
+        when(httpClient.get(any(HttpGetRequest.class)))
+                .thenReturn(new HttpResponse(200,historicalExchangeRates));
+
+        final var provider = new FreeCurrencyApiProvider(httpClient, config);
+
+        final var historicalExchangeRatesResponse = provider.getHistoricalExchangeRates("EUR",List.of("CAD","USD"), LocalDate.parse("2024-01-25"));
+
+        assertEquals(1,historicalExchangeRatesResponse.size());
+        assertTrue(historicalExchangeRatesResponse.containsKey("2024-01-25"));
+
+        var ratesForDate = historicalExchangeRatesResponse.get("2024-01-25");
+        assertEquals(2,ratesForDate.size());
+        assertEquals(ratesForDate.get("CAD"),BigDecimal.valueOf(1.46));
+        assertEquals(ratesForDate.get("USD"),BigDecimal.valueOf(1.08));
+
     }
 
     @Test
