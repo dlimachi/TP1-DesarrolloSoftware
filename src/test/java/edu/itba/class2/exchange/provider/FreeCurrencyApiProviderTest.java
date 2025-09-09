@@ -1,27 +1,29 @@
 package edu.itba.class2.exchange.provider;
 
-import edu.itba.class2.exchange.interfaces.ConfigurationManager;
+import edu.itba.class2.exchange.currency.Currency;
 import edu.itba.class2.exchange.exception.InvalidCurrencyException;
 import edu.itba.class2.exchange.exception.InvalidDateException;
 import edu.itba.class2.exchange.exception.ProviderException;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
+import edu.itba.class2.exchange.interfaces.ConfigurationManager;
 import edu.itba.class2.exchange.interfaces.HttpClient;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import edu.itba.class2.exchange.currency.Currency;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class FreeCurrencyApiProviderTest {
 
@@ -74,22 +76,22 @@ class FreeCurrencyApiProviderTest {
                 """;
 
         when(httpClient.get(any(HttpGetRequest.class)))
-                .thenReturn(new HttpResponse(200,historicalExchangeRates))
-                .thenReturn(new HttpResponse(200,currencyCAD))
-                .thenReturn(new HttpResponse(200,currencyUSD));
+                .thenReturn(new HttpResponse(200, historicalExchangeRates))
+                .thenReturn(new HttpResponse(200, currencyCAD))
+                .thenReturn(new HttpResponse(200, currencyUSD));
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
-        final var historicalExchangeRatesResponse = provider.getHistoricalExchangeRates("EUR",List.of("CAD","USD"), LocalDate.parse(localDate));
+        final var historicalExchangeRatesResponse = provider.getHistoricalExchangeRates("EUR", List.of("CAD", "USD"), LocalDate.parse(localDate));
 
-        assertEquals(1,historicalExchangeRatesResponse.size());
+        assertEquals(1, historicalExchangeRatesResponse.size());
         assertTrue(historicalExchangeRatesResponse.containsKey(localDate));
 
-        Map<Currency,BigDecimal> ratesForDate = historicalExchangeRatesResponse.get(localDate);
+        Map<Currency, BigDecimal> ratesForDate = historicalExchangeRatesResponse.get(localDate);
         var ratesMap = ratesForDate.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().code(), Map.Entry::getValue));
-        assertEquals(2,ratesForDate.size());
-        assertEquals(ratesMap.get("CAD"),BigDecimal.valueOf(1.46));
-        assertEquals(ratesMap.get("USD"),BigDecimal.valueOf(1.08));
+        assertEquals(2, ratesForDate.size());
+        assertEquals(ratesMap.get("CAD"), BigDecimal.valueOf(1.46));
+        assertEquals(ratesMap.get("USD"), BigDecimal.valueOf(1.08));
 
     }
 
@@ -105,14 +107,14 @@ class FreeCurrencyApiProviderTest {
                 """;
 
         when(httpClient.get(any(HttpGetRequest.class)))
-                .thenReturn(new HttpResponse(200,historicalExchangeRates));
+                .thenReturn(new HttpResponse(200, historicalExchangeRates));
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
         assertThrows(
                 ProviderException.class,
                 () -> provider.getHistoricalExchangeRates(
-                        "EUR",List.of("CAD","USD"),
+                        "EUR", List.of("CAD", "USD"),
                         LocalDate.parse("2024-01-25")
                 )
         );
@@ -126,27 +128,27 @@ class FreeCurrencyApiProviderTest {
 
         /* Missing closing curly brace at the end */
         String historicalExchangeRates = """
-            {
-                "message": "Validation error",
-                "errors": {
-                    "date": [
-                        "The date is not a valid date.",
-                        "The date must be a date after or equal to 1999-01-01."
-                    ]
-                },
-                "info": "For more information, see documentation: https://freecurrencyapi.com/docs/status-codes#_422"
-            }
-            """;
+                {
+                    "message": "Validation error",
+                    "errors": {
+                        "date": [
+                            "The date is not a valid date.",
+                            "The date must be a date after or equal to 1999-01-01."
+                        ]
+                    },
+                    "info": "For more information, see documentation: https://freecurrencyapi.com/docs/status-codes#_422"
+                }
+                """;
 
         when(httpClient.get(any(HttpGetRequest.class)))
-                .thenReturn(new HttpResponse(422,historicalExchangeRates));
+                .thenReturn(new HttpResponse(422, historicalExchangeRates));
 
         final var provider = new FreeCurrencyApiProvider(httpClient, config);
 
         assertThrows(
                 InvalidDateException.class,
                 () -> provider.getHistoricalExchangeRates(
-                        "EUR",List.of("CAD","USD"),
+                        "EUR", List.of("CAD", "USD"),
                         LocalDate.parse("2024-01-25")
                 )
         );
@@ -166,7 +168,7 @@ class FreeCurrencyApiProviderTest {
         assertThrows(
                 ProviderException.class,
                 () -> provider.getHistoricalExchangeRates(
-                        "EUR",List.of("CAD","USD"),
+                        "EUR", List.of("CAD", "USD"),
                         LocalDate.parse("2024-01-25")
                 )
         );
@@ -213,7 +215,7 @@ class FreeCurrencyApiProviderTest {
 
         ProviderException ex = assertThrows(
                 ProviderException.class,
-                () -> provider.getExchangeRates("",List.of())
+                () -> provider.getExchangeRates("", List.of())
         );
         assertEquals(testCase.expectedMessage, ex.getMessage());
     }

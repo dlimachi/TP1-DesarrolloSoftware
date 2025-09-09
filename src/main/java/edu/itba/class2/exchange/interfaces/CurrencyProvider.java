@@ -9,5 +9,6 @@ import java.util.Map;
 
 public interface CurrencyProvider {
     Map<Currency, BigDecimal> getExchangeRates(String fromCurrency, List<String> toCurrencies);
-    Map<String, Map<Currency,BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date);
-    }
+
+    Map<String, Map<Currency, BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date);
+}

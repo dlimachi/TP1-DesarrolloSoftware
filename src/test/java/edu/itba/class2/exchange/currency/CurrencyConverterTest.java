@@ -1,14 +1,15 @@
 package edu.itba.class2.exchange.currency;
 
 import edu.itba.class2.exchange.interfaces.CurrencyProvider;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -72,26 +73,26 @@ class CurrencyConverterTest {
 
     @Test
     @DisplayName("Should correctly convert amounts from USD to EUR and GBP using exchange rates on a specific date ")
-    void testHistoricalExchange(){
+    void testHistoricalExchange() {
         var eur = new Currency("EUR", "Euro", "€");
         var gbp = new Currency("GBP", "British Pound", "£");
 
         var date = LocalDate.parse("2023-02-14");
 
-        when(currencyProvider.getHistoricalExchangeRates("USD",List.of("EUR", "GBP"),date ))
-                .thenReturn(Map.of("2023-02-14",Map.of(eur,BigDecimal.valueOf(0.93),gbp,BigDecimal.valueOf(0.82))));
-        
+        when(currencyProvider.getHistoricalExchangeRates("USD", List.of("EUR", "GBP"), date))
+                .thenReturn(Map.of("2023-02-14", Map.of(eur, BigDecimal.valueOf(0.93), gbp, BigDecimal.valueOf(0.82))));
 
-        Map<LocalDate,List<Exchange>> result = converter.getHistorical("USD",List.of("EUR","GBP"),BigDecimal.valueOf(100),date);
 
-        assertEquals(1,result.size());
+        Map<LocalDate, List<Exchange>> result = converter.getHistorical("USD", List.of("EUR", "GBP"), BigDecimal.valueOf(100), date);
+
+        assertEquals(1, result.size());
         assertTrue(result.containsKey(date));
 
-        var eurExchange = new Exchange(eur,BigDecimal.valueOf(93.00).setScale(2, RoundingMode.HALF_UP),BigDecimal.valueOf(0.93));
-        var gbpExchange = new Exchange(gbp,BigDecimal.valueOf(82.00).setScale(2, RoundingMode.HALF_UP),BigDecimal.valueOf(0.82));
+        var eurExchange = new Exchange(eur, BigDecimal.valueOf(93.00).setScale(2, RoundingMode.HALF_UP), BigDecimal.valueOf(0.93));
+        var gbpExchange = new Exchange(gbp, BigDecimal.valueOf(82.00).setScale(2, RoundingMode.HALF_UP), BigDecimal.valueOf(0.82));
 
         var exchangesByDate = result.get(date);
-        assertEquals(2,exchangesByDate.size());
+        assertEquals(2, exchangesByDate.size());
         assertTrue(exchangesByDate.contains(eurExchange));
         assertTrue(exchangesByDate.contains(gbpExchange));
 

@@ -1,14 +1,13 @@
 package edu.itba.class2.exchange.provider;
 
 import com.google.gson.Gson;
-import edu.itba.class2.exchange.interfaces.ConfigurationManager;
 import edu.itba.class2.exchange.currency.Currency;
-
 import edu.itba.class2.exchange.exception.InvalidCurrencyException;
 import edu.itba.class2.exchange.exception.InvalidDateException;
 import edu.itba.class2.exchange.exception.ProviderException;
 import edu.itba.class2.exchange.httpClient.HttpGetRequest;
 import edu.itba.class2.exchange.httpClient.HttpResponse;
+import edu.itba.class2.exchange.interfaces.ConfigurationManager;
 import edu.itba.class2.exchange.interfaces.CurrencyProvider;
 import edu.itba.class2.exchange.interfaces.HttpClient;
 
@@ -58,7 +57,8 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
 
     private void handleErrorResponse(HttpResponse response) {
         switch (response.status()) {
-            case 200 -> {}
+            case 200 -> {
+            }
             case 401 -> throw new ProviderException("Invalid authentication credentials");
             case 403, 404 -> throw new ProviderException("Invalid endpoint");
             case 429 -> throw new ProviderException("Rate limit exceeded");
@@ -101,18 +101,18 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
     }
 
     @Override
-    public Map<String, Map<Currency,BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date){
+    public Map<String, Map<Currency, BigDecimal>> getHistoricalExchangeRates(String fromCurrency, List<String> toCurrencies, LocalDate date) {
         final var currencyList = String.join(",", toCurrencies);
         final var request = basicRequestBuilder("historical")
                 .setParameter("base_currency", fromCurrency)
                 .setParameter("currencies", currencyList)
-                .setParameter("date",date.toString())
+                .setParameter("date", date.toString())
                 .build();
         final var response = httpClient.get(request);
 
         handleErrorResponse(response);
 
-        final var historicalExchangeRates =  parseJson(response,FreeCurrencyHistoricalExchangeApiResponse.class).data();
+        final var historicalExchangeRates = parseJson(response, FreeCurrencyHistoricalExchangeApiResponse.class).data();
         return historicalExchangeRates.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -132,7 +132,7 @@ public class FreeCurrencyApiProvider implements CurrencyProvider {
     public record FreeCurrencyExchangeApiResponse(Map<String, BigDecimal> data) {
     }
 
-    public record FreeCurrencyHistoricalExchangeApiResponse(Map<String,Map<String,BigDecimal>> data){
+    public record FreeCurrencyHistoricalExchangeApiResponse(Map<String, Map<String, BigDecimal>> data) {
     }
 
     public record ErrorResponse(Map<String, List<String>> errors) {

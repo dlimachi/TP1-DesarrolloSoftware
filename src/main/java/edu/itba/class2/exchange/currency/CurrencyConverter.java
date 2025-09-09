@@ -30,9 +30,9 @@ public class CurrencyConverter {
         }
     }
 
-    public Map<LocalDate,List<Exchange>> getHistorical(String fromCurrency, List<String> toCurrencies, BigDecimal amount, LocalDate date){
+    public Map<LocalDate, List<Exchange>> getHistorical(String fromCurrency, List<String> toCurrencies, BigDecimal amount, LocalDate date) {
         try {
-            Map<String,Map<Currency,BigDecimal>> historicalExchangeRates = currencyProvider.getHistoricalExchangeRates(fromCurrency,toCurrencies,date);
+            Map<String, Map<Currency, BigDecimal>> historicalExchangeRates = currencyProvider.getHistoricalExchangeRates(fromCurrency, toCurrencies, date);
 
             return historicalExchangeRates.entrySet().stream()
                     .collect(Collectors.toMap(
