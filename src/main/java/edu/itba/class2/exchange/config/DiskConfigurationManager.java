@@ -1,6 +1,7 @@
 package edu.itba.class2.exchange.config;
 
 import edu.itba.class2.exchange.exception.CouldNotLoadPropertiesException;
+import edu.itba.class2.exchange.interfaces.ConfigurationManager;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
