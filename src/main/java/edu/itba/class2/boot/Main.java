@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Main {
 	public static void main(String[] args) {
-		final var config = new DiskConfigurationManager("application.properties");
+		final var config = new DiskConfigurationManager("freecurrencyapi.properties");
 		final var httpClient = new UnirestHttpClient();
 		final var provider = new FreeCurrencyApiProvider(httpClient, config);
 		final var converter = new CurrencyConverter(provider);
